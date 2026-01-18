@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka
+  instance:
+    prefer-ip-address: true
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+          routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/auth/**
+
+            - id: account-service
+              uri: lb://account-service
+              predicates:
+                - Path=/account/**
+
+            - id: transaction-service
+              uri: lb://transaction-service
+              predicates:
+                - Path=/transaction/**
+jwt:
+  secret: rZ6t4J2+9nA9s8yXQ0W4m9F0rVY5l5n7Cw1N6P0y2xk=

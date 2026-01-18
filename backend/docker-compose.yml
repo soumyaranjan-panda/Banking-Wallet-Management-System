@@ -1,0 +1,90 @@
+version: "3.8"
+
+networks:
+  banking-network:
+    driver: bridge
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    networks:
+      - banking-network
+    environment:
+      POSTGRES_USER: soumya
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "8079:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    networks:
+      - banking-network
+    ports:
+      - "8761:8761"
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    networks:
+      - banking-network
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: soumya
+      SPRING_DATASOURCE_PASSWORD: 1234
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    ports:
+      - "8081:8081"
+
+  account-service:
+    build: ./account-service
+    container_name: account-service
+    networks:
+      - banking-network
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/account_db
+      SPRING_DATASOURCE_USERNAME: soumya
+      SPRING_DATASOURCE_PASSWORD: 1234
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    ports:
+      - "8082:8082"
+
+  transaction-service:
+    build: ./transaction-service
+    container_name: transaction-service
+    networks:
+      - banking-network
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transaction_db
+      SPRING_DATASOURCE_USERNAME: soumya
+      SPRING_DATASOURCE_PASSWORD: 1234
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    ports:
+      - "8083:8083"
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    networks:
+      - banking-network
+    depends_on:
+      - eureka-server
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
