@@ -1,0 +1,841 @@
+===== app/environments/environment =====
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:9005'
+};
+===== app/app.spec.ts =====
+import { TestBed } from '@angular/core/testing';
+import { App } from './app';
+
+describe('App', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+    }).compileComponents();
+  });
+
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app).toBeTruthy();
+  });
+
+  it('should render title', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, frontend');
+  });
+});
+===== app/app.component.ts =====
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { AuthComponent } from './components/auth/auth.component';
+import { AccountComponent } from './components/account/account.component';
+import { TransactionComponent } from './components/transaction/transaction.component';
+import { AdminComponent } from './components/admin/admin.component';
+
+import { AuthService } from './services/auth.service';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [
+    CommonModule,
+    AuthComponent,
+    AccountComponent,
+    TransactionComponent,
+    AdminComponent
+  ],
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+
+  loggedIn = false;
+
+  view: 'account' | 'transaction' | 'admin' = 'account';
+
+  // MUST be public (used in template)
+  constructor(public auth: AuthService) {
+    this.loggedIn = this.auth.isLoggedIn();
+  }
+
+  onLogin() {
+    this.loggedIn = true;
+    this.view = 'account';
+  }
+
+  logout() {
+    this.auth.logout();
+    this.loggedIn = false;
+    this.view = 'account';
+  }
+}
+===== app/services/api.spec.ts =====
+import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ApiService } from './api.service';
+
+describe('ApiService', () => {
+  let service: ApiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule]
+    });
+    service = TestBed.inject(ApiService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+===== app/services/auth.spec.ts =====
+import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { AuthService } from './auth.service';
+
+describe('AuthService', () => {
+  let service: AuthService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule]
+    });
+    service = TestBed.inject(AuthService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+===== app/services/api.service.ts =====
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from './auth.service';
+// import { environment } from '../../environments/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+
+  private BASE_URL = 'http://localhost:9005';
+
+  constructor(
+    private http: HttpClient,
+    private auth: AuthService
+  ) {}
+
+  // -------- HEADERS --------
+  private headers() {
+    return {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${this.auth.token}`
+      })
+    };
+  }
+
+  // ========================
+  // ACCOUNT SERVICE
+  // ========================
+
+  createAccount() {
+    return this.http.post(
+      `${this.BASE_URL}/account/create`,
+      {},
+      this.headers()
+    );
+  }
+
+  getBalance(accountId: number) {
+    return this.http.get(
+      `${this.BASE_URL}/account/${accountId}/balance`,
+      this.headers()
+    );
+  }
+
+  credit(accountId: number, amount: number) {
+    return this.http.put(
+      `${this.BASE_URL}/account/credit/${accountId}?amount=${amount}`,
+      {},
+      this.headers()
+    );
+  }
+
+  debit(accountId: number, amount: number) {
+    return this.http.put(
+      `${this.BASE_URL}/account/debit/${accountId}?amount=${amount}`,
+      {},
+      this.headers()
+    );
+  }
+
+  blockAccount(accountId: number) {
+    return this.http.put(
+      `${this.BASE_URL}/account/block/${accountId}`,
+      {},
+      this.headers()
+    );
+  }
+
+  // ========================
+  // TRANSACTION SERVICE
+  // ========================
+
+  transfer(fromAccountId: number, toAccountId: number, amount: number) {
+    return this.http.post(
+      `${this.BASE_URL}/transaction/transfer`,
+      {
+        fromAccountId,
+        toAccountId,
+        amount
+      },
+      this.headers()
+    );
+  }
+
+  history(accountId: number) {
+    return this.http.get(
+      `${this.BASE_URL}/transaction/history/${accountId}`,
+      this.headers()
+    );
+  }
+}
+===== app/services/auth.service.ts =====
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+// import { environment } from '../environments/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  private BASE_URL = 'http://localhost:9005';
+
+  token: string | null = null;
+  role: string | null = null;
+
+  constructor(private http: HttpClient) {}
+
+  // -------- AUTH --------
+
+  register(username: string, password: string) {
+    return this.http.post(
+      `${this.BASE_URL}/auth/register`,
+      { username, password }
+    );
+  }
+
+  login(username: string, password: string) {
+    return this.http.post(
+      `${this.BASE_URL}/auth/login`,
+      { username, password },
+      { responseType: 'text' }
+    );
+  }
+
+  // -------- TOKEN --------
+
+  setToken(token: string) {
+    this.token = token;
+
+    // decode JWT payload (base64)
+    try {
+      console.log('Decoding token:', token);
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      this.role = payload.role || null;
+      console.log('Decoded role from token:', this.role);
+    } catch {
+      this.role = null;
+    }
+  }
+
+  isLoggedIn(): boolean {
+    return !!this.token;
+  }
+
+  isAdmin(): boolean {
+    return this.role === 'ADMIN';
+  }
+
+  logout() {
+    this.token = null;
+    this.role = null;
+  }
+}
+===== app/app.config.ts =====
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideRouter } from '@angular/router';
+
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes)
+  ]
+};
+===== app/app.component.css =====
+.sidebar-btn {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem; /* px-4 py-3 */
+  border-radius: 0.5rem;
+  transition: all 0.2s ease-out;
+}
+
+.sidebar-btn:hover {
+  background-color: #374151; /* gray-700 */
+  padding-left: 1.5rem;      /* pl-6 effect */
+}
+
+.sidebar-btn.active {
+  background-color: #374151;
+  color: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+===== app/components/admin/admin.css =====
+===== app/components/admin/admin.component.ts =====
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api.service';
+
+@Component({
+  selector: 'app-admin',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './admin.component.html'
+})
+export class AdminComponent {
+
+  accountId = 0;
+
+  constructor(private api: ApiService) {}
+
+  block() {
+    if (!this.accountId) {
+      alert('Enter account id');
+      return;
+    }
+
+    this.api.blockAccount(this.accountId).subscribe({
+      next: () => alert('Account blocked successfully'),
+      error: err => alert(err.error || 'Block failed')
+    });
+  }
+}
+===== app/components/admin/admin.spec.ts =====
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { Admin } from './admin';
+
+describe('Admin', () => {
+  let component: Admin;
+  let fixture: ComponentFixture<Admin>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [Admin]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(Admin);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+===== app/components/admin/admin.component.html =====
+<h2 class="text-xl font-bold mb-4">Admin</h2>
+
+<div class="space-y-3 max-w-sm">
+
+  <input
+    class="w-full p-2 border rounded"
+    type="number"
+    placeholder="Account ID"
+    [(ngModel)]="accountId"
+  >
+
+  <button
+    class="w-full bg-red-700 text-white p-2 rounded"
+    (click)="block()"
+  >
+    Block Account
+  </button>
+
+</div>
+===== app/components/auth/auth.spec.ts =====
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { Auth } from './auth.component';
+
+describe('Auth', () => {
+  let component: Auth;
+  let fixture: ComponentFixture<Auth>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [Auth]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(Auth);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+===== app/components/auth/auth.css =====
+===== app/components/auth/auth.component.html =====
+<div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8">
+
+  <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">
+    Banking Wallet
+  </h1>
+
+  <p class="text-center text-gray-500 mb-6">
+    {{ mode === 'login' ? 'Sign in to your account' : 'Create a new account' }}
+  </p>
+
+  <!-- Tabs -->
+  <div class="flex mb-6">
+    <button
+      class="flex-1 py-2 font-semibold border-b-2"
+      [class.border-blue-600]="mode==='login'"
+      (click)="switchMode('login')"
+    >
+      Login
+    </button>
+
+    <button
+      class="flex-1 py-2 font-semibold border-b-2"
+      [class.border-blue-600]="mode==='register'"
+      (click)="switchMode('register')"
+    >
+      Register
+    </button>
+  </div>
+
+  <!-- Form -->
+  <div class="space-y-4">
+    <input
+      class="w-full px-4 py-2 border rounded-lg"
+      placeholder="Username"
+      [(ngModel)]="username"
+    >
+
+    <input
+      type="password"
+      class="w-full px-4 py-2 border rounded-lg"
+      placeholder="Password"
+      [(ngModel)]="password"
+    >
+
+    <button
+      class="w-full py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+      [disabled]="loading"
+      (click)="submit()"
+    >
+      {{ loading ? 'Please wait...' : (mode === 'login' ? 'Login' : 'Register') }}
+    </button>
+  </div>
+
+  <p *ngIf="message" class="text-green-600 text-center mt-4">
+    {{ message }}
+  </p>
+
+  <p *ngIf="error" class="text-red-600 text-center mt-4">
+    {{ error }}
+  </p>
+</div>
+===== app/components/auth/auth.component.ts =====
+import { Component, EventEmitter, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+
+@Component({
+  selector: 'app-auth',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './auth.component.html'
+})
+export class AuthComponent {
+
+  @Output() loggedIn = new EventEmitter<void>();
+
+  mode: 'login' | 'register' = 'login';
+
+  username = '';
+  password = '';
+
+  loading = false;
+  message = '';
+  error = '';
+
+  constructor(private auth: AuthService) {}
+
+  switchMode(mode: 'login' | 'register') {
+    this.mode = mode;
+    this.message = '';
+    this.error = '';
+  }
+
+  submit() {
+    this.loading = true;
+    this.message = '';
+    this.error = '';
+
+    // ---------- REGISTER ----------
+    if (this.mode === 'register') {
+      this.auth.register(this.username, this.password).subscribe({
+        next: () => {
+          this.message = 'Registered successfully. Please login.';
+          this.switchMode('login');
+          this.loading = false;
+        },
+        error: (err: any) => {
+          this.error = err.error || 'Registration failed';
+          this.loading = false;
+        }
+      });
+    }
+
+    // ---------- LOGIN ----------
+    if (this.mode === 'login') {
+      this.auth.login(this.username, this.password).subscribe({
+        next: (token: string) => {
+          this.auth.setToken(token);
+          this.loading = false;
+          this.loggedIn.emit();
+        },
+        error: (err: any) => {
+          this.error = err.error || 'Login failed';
+          this.loading = false;
+        }
+      });
+    }
+  }
+}
+===== app/components/transaction/transaction.component.html =====
+<h2 class="text-xl font-bold mb-4">Transaction</h2>
+
+<div class="space-y-3 max-w-sm">
+
+  <input
+    class="w-full p-2 border rounded"
+    type="number"
+    placeholder="From Account ID"
+    [(ngModel)]="fromAccountId"
+  >
+
+  <input
+    class="w-full p-2 border rounded"
+    type="number"
+    placeholder="To Account ID"
+    [(ngModel)]="toAccountId"
+  >
+
+  <input
+    class="w-full p-2 border rounded"
+    type="number"
+    placeholder="Amount"
+    [(ngModel)]="amount"
+  >
+
+  <button
+    class="w-full bg-purple-600 text-white p-2 rounded"
+    (click)="transfer()"
+  >
+    Transfer
+  </button>
+
+  <button
+    class="w-full bg-gray-700 text-white p-2 rounded"
+    (click)="history()"
+  >
+    Get History
+  </button>
+
+  <pre *ngIf="historyResult" class="mt-4 bg-white p-3 text-sm rounded border">
+{{ historyResult | json }}
+  </pre>
+
+</div>
+===== app/components/transaction/transaction.spec.ts =====
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { Transaction } from './transaction.component';
+
+describe('Transaction', () => {
+  let component: Transaction;
+  let fixture: ComponentFixture<Transaction>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [Transaction]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(Transaction);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+===== app/components/transaction/transaction.css =====
+===== app/components/transaction/transaction.component.ts =====
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api.service';
+
+@Component({
+  selector: 'app-transaction',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './transaction.component.html'
+})
+export class TransactionComponent {
+
+  fromAccountId = 0;
+  toAccountId = 0;
+  amount = 0;
+
+  historyResult: any;
+
+  constructor(private api: ApiService) {}
+
+  transfer() {
+    this.api.transfer(this.fromAccountId, this.toAccountId, this.amount)
+      .subscribe({
+        next: () => alert('Transfer successful'),
+        error: err => alert(err.error || 'Transfer failed')
+      });
+  }
+
+  history() {
+    this.api.history(this.fromAccountId)
+      .subscribe({
+        next: res => {
+          this.historyResult = res;
+          console.log('Transaction history:', res);
+        },
+        error: err => alert(err.error || 'History fetch failed')
+      });
+  }
+}
+===== app/components/account/account.component.ts =====
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api.service';
+
+@Component({
+  selector: 'app-account',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './account.component.html'
+})
+export class AccountComponent {
+
+  accountId = 0;
+  amount = 0;
+  balance: number | null = null;
+
+  constructor(private api: ApiService) {}
+
+  create() {
+    this.api.createAccount().subscribe({
+      next: (res: any) => {
+        this.accountId = res.id;
+        alert('Account created');
+      },
+      error: err => alert(err.error || 'Create failed')
+    });
+  }
+
+  getBalance() {
+    this.api.getBalance(this.accountId).subscribe({
+      next: (b: any) => this.balance = b,
+      error: err => alert(err.error || 'Balance fetch failed')
+    });
+  }
+
+  credit() {
+    this.api.credit(this.accountId, this.amount).subscribe({
+      next: () => alert('Credited'),
+      error: err => alert(err.error || 'Credit failed')
+    });
+  }
+
+  debit() {
+    this.api.debit(this.accountId, this.amount).subscribe({
+      next: () => alert('Debited'),
+      error: err => alert(err.error || 'Debit failed')
+    });
+  }
+}
+===== app/components/account/account.spec.ts =====
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { Account } from './account';
+
+describe('Account', () => {
+  let component: Account;
+  let fixture: ComponentFixture<Account>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [Account]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(Account);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+===== app/components/account/account.component.html =====
+<h2 class="text-xl font-bold mb-4">Account</h2>
+
+<div class="space-y-3 max-w-sm">
+
+  <button
+    class="w-full bg-blue-600 text-white p-2 rounded"
+    (click)="create()"
+  >
+    Create Account
+  </button>
+
+  <input
+    class="w-full p-2 border rounded"
+    placeholder="Account ID"
+    type="number"
+    [(ngModel)]="accountId"
+  >
+
+  <input
+    class="w-full p-2 border rounded"
+    placeholder="Amount"
+    type="number"
+    [(ngModel)]="amount"
+  >
+
+  <button
+    class="w-full bg-green-600 text-white p-2 rounded"
+    (click)="credit()"
+  >
+    Credit
+  </button>
+
+  <button
+    class="w-full bg-red-600 text-white p-2 rounded"
+    (click)="debit()"
+  >
+    Debit
+  </button>
+
+  <button
+    class="w-full bg-gray-700 text-white p-2 rounded"
+    (click)="getBalance()"
+  >
+    Get Balance
+  </button>
+
+  <p *ngIf="balance !== null" class="font-semibold">
+    Balance: {{ balance }}
+  </p>
+
+</div>
+===== app/components/account/account.css =====
+===== app/app.routes.ts =====
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [];
+===== app/app.component.html =====
+<!-- AUTH PAGE -->
+<div
+  *ngIf="!loggedIn"
+  class="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700"
+>
+  <app-auth (loggedIn)="onLogin()"></app-auth>
+</div>
+
+<!-- DASHBOARD -->
+<div *ngIf="loggedIn" class="w-screen h-screen flex">
+
+  <!-- Sidebar -->
+  <div class="w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-gray-200 flex flex-col">
+
+    <!-- App title -->
+    <div class="px-6 py-5 text-xl font-bold tracking-wide border-b border-gray-700">
+      Banking Wallet
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      <button
+        class="sidebar-btn"
+        [class.active]="view==='account'"
+        (click)="view='account'"
+      >
+        <span>Account</span>
+      </button>
+
+      <button
+        class="sidebar-btn"
+        [class.active]="view==='transaction'"
+        (click)="view='transaction'"
+      >
+        <span>Transaction</span>
+      </button>
+
+      <button
+        *ngIf="auth.isAdmin()"
+        class="sidebar-btn"
+        [class.active]="view==='admin'"
+        (click)="view='admin'"
+      >
+        Admin
+      </button>
+    </nav>
+
+    <!-- Logout -->
+    <div class="px-3 py-4 border-t border-gray-700">
+      <button
+        class="sidebar-btn text-red-400 hover:text-red-300"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT (THIS WAS MISSING EARLIER) -->
+  <div class="flex-1 p-6 bg-gray-100 overflow-auto">
+    <app-account *ngIf="view==='account'"></app-account>
+    <app-transaction *ngIf="view==='transaction'"></app-transaction>
+    <app-admin *ngIf="view==='admin'"></app-admin>
+  </div>
+
+</div>

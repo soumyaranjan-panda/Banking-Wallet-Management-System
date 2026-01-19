@@ -1,16 +1,129 @@
-<h2 class="text-xl font-bold mb-4">Account</h2>
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+  <div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">Account Management</h1>
+      <p class="text-gray-600">Manage your accounts, view balances, and perform transactions</p>
+    </div>
 
-<div class="space-y-3 max-w-sm">
-  <button class="w-full bg-blue-500 text-white p-2" (click)="create()">
-    Create Account
-  </button>
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+      {{ success }}
+    </div>
+    <div *ngIf="error" class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+      {{ error }}
+    </div>
 
-  <input class="w-full p-2 border" placeholder="Account ID" [(ngModel)]="accountId">
-  <input class="w-full p-2 border" placeholder="Amount" type="number" [(ngModel)]="amount">
+    <!-- Create Account Section -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Create New Account</h2>
+      <button
+        (click)="createAccount()"
+        [disabled]="loading"
+        class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+      >
+        <span *ngIf="!loading">Create Account</span>
+        <span *ngIf="loading">Creating...</span>
+      </button>
+    </div>
 
-  <button class="w-full bg-green-500 text-white p-2" (click)="credit()">Credit</button>
-  <button class="w-full bg-red-500 text-white p-2" (click)="debit()">Debit</button>
-  <button class="w-full bg-gray-700 text-white p-2" (click)="getBalance()">Get Balance</button>
+    <!-- Account Selection and Balance -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Account Operations</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label for="accountId" class="block text-sm font-medium text-gray-700 mb-2">
+            Account ID
+          </label>
+          <div class="flex gap-2">
+            <input
+              id="accountId"
+              type="number"
+              [(ngModel)]="selectedAccountId"
+              (change)="onAccountChange()"
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+              placeholder="Enter account ID"
+            />
+            <button
+              (click)="loadBalance()"
+              [disabled]="!selectedAccountId || loading"
+              class="px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Load Balance
+            </button>
+          </div>
+          <p *ngIf="createdAccountId" class="mt-2 text-sm text-green-600">
+            Created Account ID: {{ createdAccountId }}
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Current Balance</label>
+          <div class="px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg">
+            <span class="text-2xl font-bold text-gray-900">
+              ${{ balance !== null ? balance.toFixed(2) : '0.00' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <p>Balance: {{balance}}</p>
+    <!-- Credit and Debit Operations -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Credit Account -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Credit Account</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="creditAmount" class="block text-sm font-medium text-gray-700 mb-2">
+              Amount
+            </label>
+            <input
+              id="creditAmount"
+              type="number"
+              [(ngModel)]="creditAmount"
+              min="0.01"
+              step="0.01"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+              placeholder="Enter amount"
+            />
+          </div>
+          <button
+            (click)="creditAccount()"
+            [disabled]="loading || !selectedAccountId"
+            class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Credit Account
+          </button>
+        </div>
+      </div>
+
+      <!-- Debit Account -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Debit Account</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="debitAmount" class="block text-sm font-medium text-gray-700 mb-2">
+              Amount
+            </label>
+            <input
+              id="debitAmount"
+              type="number"
+              [(ngModel)]="debitAmount"
+              min="0.01"
+              step="0.01"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+              placeholder="Enter amount"
+            />
+          </div>
+          <button
+            (click)="debitAccount()"
+            [disabled]="loading || !selectedAccountId"
+            class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Debit Account
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>

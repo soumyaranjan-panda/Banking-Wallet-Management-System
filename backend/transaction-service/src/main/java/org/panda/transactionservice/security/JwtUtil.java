@@ -2,22 +2,26 @@ package org.panda.transactionservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class JwtUtil {
 
-    private static String SECRET;
+    private final SecretKey signingKey;
 
-    @Value("${jwt.secret}")
-    public void setSecret(String secret) {
-        JwtUtil.SECRET = secret;
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static Claims validateToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET)
+    public Claims validateToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
