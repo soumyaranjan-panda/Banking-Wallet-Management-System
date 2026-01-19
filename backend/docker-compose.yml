@@ -15,7 +15,7 @@ services:
       POSTGRES_USER: soumya
       POSTGRES_PASSWORD: 1234
     ports:
-      - "8079:5432"
+      - "9000:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -26,7 +26,7 @@ services:
     networks:
       - banking-network
     ports:
-      - "8761:8761"
+      - "9001:8761"
 
   auth-service:
     build: ./auth-service
@@ -42,7 +42,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 1234
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
     ports:
-      - "8081:8081"
+      - "9002:8081"
 
   account-service:
     build: ./account-service
@@ -58,7 +58,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 1234
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
     ports:
-      - "8082:8082"
+      - "9003:8082"
 
   transaction-service:
     build: ./transaction-service
@@ -74,7 +74,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 1234
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
     ports:
-      - "8083:8083"
+      - "9004:8083"
 
   api-gateway:
     build: ./api-gateway
@@ -84,7 +84,7 @@ services:
     depends_on:
       - eureka-server
     ports:
-      - "8080:8080"
+      - "9005:8080"
 
 volumes:
   pgdata:

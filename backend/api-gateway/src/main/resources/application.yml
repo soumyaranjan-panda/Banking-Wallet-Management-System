@@ -6,7 +6,8 @@ eureka:
     service-url:
       defaultZone: http://eureka-server:8761/eureka
   instance:
-    prefer-ip-address: true
+    prefer-ip-address: true     
+
 
 spring:
   application:
@@ -33,5 +34,17 @@ spring:
               uri: lb://transaction-service
               predicates:
                 - Path=/transaction/**
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            corsConfigurations:
+              '[/**]':
+                allowedOrigins: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
 jwt:
   secret: rZ6t4J2+9nA9s8yXQ0W4m9F0rVY5l5n7Cw1N6P0y2xk=

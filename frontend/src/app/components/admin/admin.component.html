@@ -1,0 +1,17 @@
+<h2 class="text-xl font-bold mb-4">Admin</h2>
+
+<div class="space-y-3 max-w-sm">
+  <input
+    class="w-full p-2 border"
+    placeholder="Account ID"
+    type="number"
+    [(ngModel)]="accountId"
+  >
+
+  <button
+    class="w-full bg-red-700 text-white p-2"
+    (click)="block()"
+  >
+    Block Account
+  </button>
+</div>

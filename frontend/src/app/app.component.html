@@ -1,0 +1,15 @@
+<div class="w-screen h-screen flex bg-gray-100">
+  <div class="w-56 bg-gray-900 text-white p-4 space-y-2">
+    <button (click)="view='auth'">Auth</button>
+    <button (click)="view='account'">Account</button>
+    <button (click)="view='transaction'">Transaction</button>
+    <button (click)="view='admin'">Admin</button>
+  </div>
+
+  <div class="flex-1 p-6">
+    <app-auth *ngIf="view==='auth'"></app-auth>
+    <app-account *ngIf="view==='account'"></app-account>
+    <app-transaction *ngIf="view==='transaction'"></app-transaction>
+    <app-admin *ngIf="view==='admin'"></app-admin>
+  </div>
+</div>

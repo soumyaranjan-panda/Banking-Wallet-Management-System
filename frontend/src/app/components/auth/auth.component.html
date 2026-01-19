@@ -1,0 +1,16 @@
+<h2 class="text-xl font-bold mb-4">Auth</h2>
+
+<div class="space-y-3 max-w-sm">
+  <input class="w-full p-2 border" placeholder="Username" [(ngModel)]="username">
+  <input class="w-full p-2 border" type="password" placeholder="Password" [(ngModel)]="password">
+
+  <button class="w-full bg-blue-600 text-white p-2" (click)="register()">
+    Register
+  </button>
+
+  <button class="w-full bg-green-600 text-white p-2" (click)="login()">
+    Login
+  </button>
+
+  <p class="text-sm text-green-700">{{message}}</p>
+</div>

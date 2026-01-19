@@ -1,0 +1,38 @@
+<h2 class="text-xl font-bold mb-4">Transaction</h2>
+
+<div class="space-y-3 max-w-sm">
+  <input
+    class="w-full p-2 border"
+    type="number"
+    placeholder="From Account ID"
+    [(ngModel)]="fromAccountId"
+  >
+
+  <input
+    class="w-full p-2 border"
+    type="number"
+    placeholder="To Account ID"
+    [(ngModel)]="toAccountId"
+  >
+
+  <input
+    class="w-full p-2 border"
+    type="number"
+    placeholder="Amount"
+    [(ngModel)]="amount"
+  >
+
+  <button
+    class="w-full bg-purple-600 text-white p-2"
+    (click)="transfer()"
+  >
+    Transfer
+  </button>
+
+  <button
+    class="w-full bg-gray-700 text-white p-2"
+    (click)="history()"
+  >
+    History
+  </button>
+</div>

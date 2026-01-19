@@ -1,13 +1,29 @@
-banking-wallet-microservices/
+banking-ui/
+├── angular.json
+├── package.json
+├── tailwind.config.js
+├── postcss.config.js
 │
-├── backend/
-│   ├── api-gateway/
-│   ├── auth-service/
-│   ├── account-service/
-│   ├── transaction-service/
-│   └── docker-compose.yml
-│
-├── frontend/
-│   └── banking-ui/
-│
-└── README.md
+└── src/
+    ├── main.ts
+    ├── index.html
+    ├── styles.css
+    │
+    └── app/
+        ├── app.component.ts
+        ├── app.component.html
+        ├── app.component.css
+        │
+        ├── services/
+        │   ├── api.service.ts
+        │   └── auth.service.ts
+        │
+        ├── models/
+        │   ├── account.ts
+        │   └── transaction.ts
+        │
+        └── components/
+            ├── auth.component.ts
+            ├── account.component.ts
+            ├── transaction.component.ts
+            └── admin.component.ts
